@@ -1,0 +1,171 @@
+
+    1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1;
+    0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0;
+    1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1;
+    0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0;
+    1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1;
+    0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0;
+    1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1;
+    0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0;
+    1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1;
+    0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0;
+    1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1;
+    0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0;
+    1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1;
+    0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0;
+    1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1;
+    0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0;
+    1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1;
+];
+
+
+
+x2 = diag(ones(1, 17));
+
+onerun = 0;
+batch_val = 2;
+max_indices = cell(batch_val, 1);
+
+k1 = [2 1 3 4; 6 7 8 9; 5 6 4 2; 8 9 6 7];
+y_true=[1;0];
+
+
+weight_ini = [];
+bias = 0;
+
+for iterr = 1:1
+    sig = zeros(batch_val, 1);  % Reset sig for each iteration
+
+    for batchi = 1:batch_val
+   
+        if batchi == 1
+            x = x1;
+        else
+            x = x2;
+        end
+
+        % Convolution and ReLU
+        cov_op = conv2(x, k1, 'valid');
+        conv_oprelu = max(0, cov_op);
+
+        % Max pooling
+        [m, n] = size(conv_oprelu);
+        pooled_matrix = zeros(floor(m/2), floor(n/2));  
+        max_indices{batchi} = zeros(floor(m/2), floor(n/2), 2);
+         
+        for i = 1:2:m-1
+        for j = 1:2:n-1
+            block = conv_oprelu(i:i+1, j:j+1);
+            max_value = max(block(:));
+            pooled_matrix(ceil(i/2), ceil(j/2)) = max_value;
+
+           
+            [row_idx, col_idx] = find(block == max_value);
+            
+            max_indices{batchi}(ceil(i/2), ceil(j/2), :) = [i + row_idx(1) - 1, j + col_idx(1) - 1]; 
+                end
+        end
+
+            
+        disp(conv_oprelu);
+        disp(pooled_matrix);
+        flatt = pooled_matrix(:);
+
+    
+        if iterr == 1 && batchi == 1
+            [rowssss, colsss] = size(flatt);
+             [rowssss, colsss] = size(flatt');
+            weight_ini = zeros(colsss, 1);
+            x_new = zeros(batch_val, colsss);
+            X_dontchange = zeros(batch_val, colsss);
+        end
+
+       
+        x_new(batchi, :) = flatt';
+        X_dontchange(batchi, :) = flatt';
+
+        logit = sum(flatt .* weight_ini) + bias;
+        sig(batchi) = 1 / (1 + exp(-logit));
+    end
+
+  
+    loss_grad = sig - y_true;
+   
+  
+
+   
+    for newrun = 1:size(flatt, 1)
+   
+        mult = sum(loss_grad .* x_new(:, newrun));
+        mult_avg = mult / batch_val;
+
+       
+        grad = mult_avg + 0.01 * weight_ini(newrun);
+        weight_ini(newrun) = weight_ini(newrun) - 0.01 * grad;  % Update with learning rate
+        
+        % Update bias
+        bias_grad = mult_avg / batch_val;
+        bias = bias - 0.01 * bias_grad;  % Update with learning rate
+    end
+    logit_update=sum(flatt .* weight_ini) + bias;
+    y_pred_second= 1 / (1 + exp(-logit));
+    loss_grad_second = y_pred_second - y_true;
+    
+    
+    
+    sum=0;
+    for neewbat=1:batch_val
+       
+        mult1=loss_grad_second(neewbat,1)*weight_ini';
+       [inirpool,inicpool]=size(pooled_matrix);
+       back_pool = reshape(mult1, inirpool, inicpool);
+       
+        parent_matrix=zeros(size(pooled_matrix,1),size(pooled_matrix,2));
+           for i = 1:size(back_pool, 1)  
+                      for j = 1:size(back_pool, 2) 
+                            original_indices = max_indices{neewbat}(i, j, :);
+                            
+                             original_row = original_indices(1);  
+                             original_col = original_indices(2);
+                             parent_matrix(original_row, original_col) = back_pool(i, j);
+                      end
+                     
+                    
+                      
+           end
+           
+            disp('parent');
+           disp(parent_matrix);
+           
+                    
+        [rowp,colp]=size(parent_matrix);
+        onesmat=zeros(rowp,colp);
+        
+                            for pp=1:rowp
+                                for qq=1:colp
+                                    if parent_matrix(pp,qq)>0
+                                        onesmat(pp,qq)=1;
+                                    else
+
+                                  end
+
+                                end
+
+                            end
+                            
+               
+                      disp(onesmat);
+                            
+        mult2=onesmat*parent_matrix;
+        kenel_grad=conv2(x_new,mult2,'valid');
+        sum=sum+kenel_grad
+        
+    end    
+        
+    kernel_avg=sum/batch_val;
+    
+       
+    end
+
+
+  
