@@ -118,11 +118,11 @@ for iterr = 1:1
 
        
         grad = mult_avg + 0.01/batch_val * weight_ini(newrun);
-        weight_ini(newrun) = weight_ini(newrun) - grad;  % Update with learning rate
+        weight_ini(newrun) = weight_ini(newrun) - grad;  
         
        
         bias_grad = sum(loss_grad)/ batch_val;
-        bias = bias - 0.01 * bias_grad;  % Update with learning rate
+        bias = bias - 0.01 * bias_grad; 
     end
     
                 for batchi=1:batch_val
