@@ -1,0 +1,178 @@
+x1 = [
+    1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1;
+    0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0;
+    1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1;
+    0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0;
+    1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1;
+    0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0;
+    1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1;
+    0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0;
+    1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1;
+    0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0;
+    1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1;
+    0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0;
+    1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1;
+    0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0;
+    1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1;
+    0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0;
+    1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1;
+];
+
+
+
+x2 = diag(ones(1, 17));
+
+onerun = 0;
+batch_val = 2;
+max_indices = cell(batch_val, 1);
+number_ker=10;
+pooled_matrix = cell(number_ker, 1);
+
+k1 = rand(number_ker, 4, 4);
+y_true=[1;0];
+
+
+weight_ini = [];
+bias = 0;
+ sig = zeros(batch_val, 1);
+ 
+
+for iterr = 1:1
+     
+
+    for batchi = 1:batch_val
+   
+        if batchi == 1
+            x = x1;
+        else
+            x = x2;
+        end
+
+        conv_oprelu = cell(number_ker, 1);
+        
+        for kerindex=1:number_ker
+            
+            cov_op = conv2(x, squeeze(k1(kerindex, :, :)), 'valid');
+            conv_oprelu{kerindex} = max(0, cov_op);
+        
+        end
+        
+        max_indices{batchi} = cell(number_ker, 1);
+        
+        for kerindex = 1:number_ker
+            [m, n] = size(conv_oprelu{kerindex});
+            pooled_matrix{kerindex} = zeros(floor(m/2), floor(n/2));  
+            max_indices{batchi}{kerindex} = zeros(floor(m/2), floor(n/2), 2);
+            
+           
+            for i = 1:2:m-1
+                for j = 1:2:n-1
+                    block = conv_oprelu{kerindex}(i:i+1, j:j+1);
+                    max_value = max(block(:));
+                    pooled_matrix{kerindex}(ceil(i/2), ceil(j/2)) = max_value;
+                    
+                   
+                    [row_idx, col_idx] = find(block == max_value);
+                    max_indices{batchi}{kerindex}(ceil(i/2), ceil(j/2), :) = [i + row_idx(1) - 1, j + col_idx(1) - 1]; 
+                end
+            end
+        end
+        
+        flatten_output = [];
+        for keridx = 1:number_ker
+            flattt = pooled_matrix{keridx}(:);
+            flatten_output = [flatten_output; flattt];  
+        end
+
+
+         
+      
+
+    
+        if iterr == 1 && batchi == 1
+            [rowssss, colsss] = size(flatten_output);
+             [rowssss, colsss] = size(flatten_output');
+            weight_ini = zeros(colsss, 1);
+            x_new = zeros(batch_val, colsss);
+            X_dontchange = zeros(batch_val, colsss);
+        end
+
+       
+        x_new(batchi, :) = flatten_output';
+        X_dontchange(batchi, :) = flatten_output';
+
+        logit =  sum(sum(flatten_output .* weight_ini)) + bias;
+        sig(batchi) = 1 / (1 + exp(-logit));
+    end
+
+  
+    loss_grad = sig - y_true;
+   
+  
+
+   
+    for newrun = 1:size(flatten_output, 1)
+   
+        mult = sum(loss_grad .* x_new(:, newrun));
+        mult_avg = mult / batch_val;
+
+       
+        grad = mult_avg + 0.01/batch_val * weight_ini(newrun);
+        weight_ini(newrun) = weight_ini(newrun) - grad;  % Update with learning rate
+        
+       
+        bias_grad = sum(loss_grad)/ batch_val;
+        bias = bias - 0.01 * bias_grad;  % Update with learning rate
+    end
+    
+                for batchi=1:batch_val
+                        logit_update=sum(X_dontchange(batchi,:)' .* weight_ini) + bias;
+                        y_pred_second(batchi)= 1 / (1 + exp(-logit_update));
+                        loss_grad(batchi,1) = y_pred_second(batchi) - y_true(batchi,1);
+                end
+    
+    
+            [fr,fc]=size(flatten_output);
+            num=fr/number_ker;
+            start=1;
+            diff=num-1;
+
+            for index=1:number_ker
+                sumt=0;
+                  for neewbat=1:batch_val
+                      endx=start+diff;
+                       mult1 = loss_grad(neewbat, 1) * weight_ini(start:endx)'; 
+                        [inirpool, inicpool] = size(pooled_matrix{index});
+                        back_pool = reshape(mult1, inirpool, inicpool);
+                                  
+                     parent_matrix = zeros(size(conv_oprelu{index}, 1), size(conv_oprelu{index}, 2));
+                    for i = 1:size(back_pool, 1)
+                        for j = 1:size(back_pool, 2)
+                            original_indices = max_indices{neewbat}{index}(i, j, :);
+                            original_row = original_indices(1);  
+                            original_col = original_indices(2);
+                            parent_matrix(original_row, original_col) = back_pool(i, j);  
+                        end
+                    end
+
+
+
+                    onesmat = double(parent_matrix > 0);
+                    mult2 = onesmat * parent_matrix; 
+                              if neewbat == 1
+                                        x = x1;
+                                    else
+                                        x = x2;
+                              end
+
+                    kernel_grad = conv2(x, mult2, 'valid');
+                    sumt = sumt + kernel_grad; 
+                  
+                  
+                  end
+                  start=endx+1;
+            end
+end
+
+            
+
