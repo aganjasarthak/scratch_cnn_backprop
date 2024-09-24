@@ -158,7 +158,7 @@ for iterr = 1:1
 
 
                     onesmat = double(parent_matrix > 0);
-                    mult2 = onesmat * parent_matrix; 
+                    mult2 = onesmat .* parent_matrix; 
                               if neewbat == 1
                                         x = x1;
                                     else
