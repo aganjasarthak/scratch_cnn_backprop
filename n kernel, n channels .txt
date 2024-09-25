@@ -1,16 +1,5 @@
 x1 = rand(17, 17, 3); % 3 channels
 x2 = rand(17, 17, 3); %3 chanels
-num_channels = 3;
-number_ker = 10; 
-k1 = rand(number_ker, 4, 4, num_channels);
-onerun = 0;
-batch_val = 2;
-max_indices = cell(batch_val, 1);
-pooled_matrix = cell(number_ker, num_channels);
-y_true = [1; 0];
-weight_ini = [];
-bias = 0;
-sig = zeros(batch_val, 1);
 
 
 for iterr = 1:2
