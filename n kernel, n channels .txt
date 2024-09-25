@@ -1,5 +1,5 @@
-x1 = rand(17, 17, 3); % Input matrix with 3 channels
-x2 = rand(17, 17, 3); % Input matrix with 3 channels
+x1 = rand(17, 17, 3); % 3 channels
+x2 = rand(17, 17, 3); %3 chanels
 num_channels = 3;
 number_ker = 10; 
 k1 = rand(number_ker, 4, 4, num_channels);
@@ -60,7 +60,7 @@ for iterr = 1:2
             for kerindex = 1:number_ker
                 for channel = 1:num_channels
                     flattt = pooled_matrix{kerindex, channel}(:);
-                    flatten_output = [flatten_output; flattt]; % Flatten and concatenate each channel separately
+                    flatten_output = [flatten_output; flattt]; 
                 end
             end
 
@@ -103,7 +103,7 @@ for iterr = 1:2
        end
     
         [fr, fc] = size(flatten_output);
-    num = fr / (number_ker * num_channels); % Adjust based on channels
+    num = fr / (number_ker * num_channels); 
     start = 1;
     diff = num - 1;
 
@@ -128,14 +128,14 @@ for iterr = 1:2
                              onesmat = double(parent_matrix > 0);
                     mult2 = onesmat .* parent_matrix;
 
-                    % Perform convolution for gradient calculation
+                 
                     if neewbat == 1
                         x = x1;
                     else
                         x = x2;
                     end
 
-                    % Sum gradients across channels
+               
                     for channel = 1:num_channels
                         kernel_grad(:, :, channel) = conv2(x(:, :, channel), mult2, 'valid');
                     end
