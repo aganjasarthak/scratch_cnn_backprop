@@ -1,0 +1,63 @@
+x = [    1 1 0 0;    0 1 1 1;    1 0 0 1;    0 0 1 0;    1 1 1 0;    0 1 0 1;    1 0 1 0;    0 0 0 1;    1 0 1 1;    0 1 1 0;    1 0 0 0;    0 1 0 0;    1 1 1 1;    0 0 1 1;    1 1 0 0;    0 0 0 1;    1 0 0 1;    0 1 1 1;    1 1 1 0;    0 0 1 0];
+
+y = [    1;    0;    1;    0;    1;    0;    1;    0;    1;    0;    1;    0;    1;    1;    0;    0;    1;    0;    1;    0];
+
+
+value=20;
+prop=4;
+beta1=0.9;
+beta2=0.999; epsi=1e-08;
+t=0;
+
+
+for iter=1:10
+    
+        t=t+1;
+        
+       if iter==1
+         weight_ini=ones(4,1);
+         bias=200;
+         firstmoment=zeros(size(x,2),1);
+          secondmoment=zeros(size(x,2),1);
+          firstmomentcap=zeros(size(x,2),1);
+          secondmomentcap=zeros(size(x,2),1);
+       end
+         
+    for batch=1:value
+        logit=sum(weight_ini' .* x(batch,:)) +bias;
+        logic(batch)=logit;
+        
+        siggg(batch)=1/(1+exp(-logit));
+        
+    end
+    
+    loss=siggg'-y;
+    
+        
+        for newrun=1:prop
+            mult=sum(loss .* x(:,newrun));
+            grad=mult/value+0.01/value*weight_ini(newrun,1);
+            firstmoment(newrun,1)=beta1*firstmoment(newrun,1)+(1-beta1)*grad;
+            sqdgrad=grad^2;
+            secondmoment(newrun,1)=secondmoment(newrun,1)*beta2+(1-beta2)*sqdgrad;
+            
+             firstmomentcap(newrun,1)=(firstmoment(newrun,1))/(1-beta1^t);
+             secondmomentcap(newrun,1)=secondmoment(newrun,1)/(1-beta2^t);
+            
+              deno=(secondmomentcap(newrun,1))^0.5+epsi;
+              changed_gard= firstmomentcap(newrun,1)/deno;
+              
+            
+            weight_ini(newrun,1)=weight_ini(newrun,1)-grad;
+            
+            bias_grad=sum(loss)/value;
+            bias=bias-bias_grad;
+            
+            
+            
+            
+        end
+  
+
+    
+end
